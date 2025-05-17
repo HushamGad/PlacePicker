@@ -3,6 +3,7 @@ import bodyParser from 'body-parser'; //  enables JSON body parsing in requests.
 import express from 'express'; // helps create a robust web server.
 
 const app = express();
+const port = process.env.PORT || 3000
 
 app.use(express.static('images')); // serves all files in the images folder via the root URL.
 app.use(bodyParser.json()); // allows parsing of incoming JSON request bodies.
@@ -55,4 +56,4 @@ app.use((req, res, next) => {
   res.status(404).json({ message: '404 - Not Found' });
 });
 //  Start the Express server and make it listen for incoming requests on port 3000.
-app.listen(3000);
+app.listen(port);

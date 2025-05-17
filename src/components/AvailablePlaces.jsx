@@ -1,42 +1,30 @@
-import { useEffect, useState } from 'react';
 import Places from './Places.jsx';
 import ErrorPage from './ErrorPage.jsx';
 import { sortPlacesByDistance } from './../loc';
-import {fetchAvailablePlaces} from '../http.js';
+import { fetchAvailablePlaces } from '../http.js';
+import useFetch from '../hooks/useFetch.js';
 
-
+async function fetchSortedPlaces() {
+  const places = await fetchAvailablePlaces()
+  // The function returns a new Promise. This is necessary because the Geolocation API works asynchronously.
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition((position) => {
+      const sorttedPlaces = sortPlacesByDistance(
+        places, // The list fetched from the server
+        position.coords.latitude, // User's latitude.
+        position.coords.longitude // User's longitude.
+      )
+      resolve(sorttedPlaces)
+    })
+  })
+}
 
 export default function AvailablePlaces({ onSelectPlace }) {
-  const [isFetching, setIsFetching] = useState(false)
-  const [availablePlaces, setAvailablePlaces] = useState([])
-  const [error, setError] = useState()
-
-  useEffect(() => {
-    // Fetch Places from the Server
-    async function fetchPlaces() {
-      setIsFetching(true)
-      try {
-        
-        const places = await fetchAvailablePlaces()
-        // Sort Places by User's Location
-        navigator.geolocation.getCurrentPosition((position) => {
-          const sorttedPlaces = sortPlacesByDistance(
-            places, // The list fetched from the server
-            position.coords.latitude, // User's latitude.
-            position.coords.longitude // User's longitude.
-          )
-          // Updates the state variable availablePlaces with the sorted list.
-          setAvailablePlaces(sorttedPlaces) 
-          setIsFetching(false)
-        })
-      } catch (error) {
-        setError(error)
-        setIsFetching(false)
-      }
-
-    }
-    fetchPlaces()
-  }, [])
+  const {
+    isFetching,
+    error,
+    fetchedData: availablePlaces,
+  } = useFetch(fetchSortedPlaces, [])
 
   if (error) {
     return <ErrorPage title="An error occurred!" message={error.message} />

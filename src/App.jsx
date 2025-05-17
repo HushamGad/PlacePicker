@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback } from 'react';
 
 import Places from './components/Places.jsx';
 import Modal from './components/Modal.jsx';
@@ -7,34 +7,24 @@ import logoImg from './assets/logo.png';
 import AvailablePlaces from './components/AvailablePlaces.jsx';
 import { fetchUserPlaces, updateUserPlaces } from './http.js';
 import ErrorPage from './components/ErrorPage';
+import useFetch from './hooks/useFetch.js';
 
 function App() {
   const selectedPlace = useRef(); // Holds a reference to the place the user wants to remove.
-
-  const [userPlaces, setUserPlaces] = useState([]); // Stores an array of places the user has selected.
-
-  const [isFetching, setIsFetching] = useState(false) // Shows a loading spinner or message while waiting for data.
-
-  const [error, setError] = useState() // Displays an error message to the user if data fetching or any operation fails.
 
   const [modalIsOpen, setModalIsOpen] = useState(false); // Keeps track of whether the modal is visible or not.
 
   const [errorUpdatingPlaces, setErrorUpdatingPlaces] = useState() // Displays a separate error message for update operations, as opposed to general fetching errors.
 
-  // fetch user places from a server as soon as the component mounts
-  useEffect(() => {
-    async function fetchPlaces() {
-      setIsFetching(true) //  show a loading spinner or some other indication that the app is busy.
-      try {
-        const places = await fetchUserPlaces() // Calls an API function that fetches user places from the server.
-        setUserPlaces(places) // Updates the state with the fetched places data.
-      } catch (error) {
-        setError({ message: error.message }) // Catches any error that occurs during the data fetching process.
-      }
-      setIsFetching(false) // Ensures that the loading spinner or indicator disappears even if an error occurred.
-    }
-    fetchPlaces()
-  }, []) // The empty dependency array ([]) means this effect will run only once when the component mounts.
+  // uses object destructuring to extract specific values from the object returned by the useFetch hook.
+  const {
+    isFetching, // Boolean: Indicates if data is currently being fetched
+    error, // Object: Holds error information if fetching fails
+    fetchedData: userPlaces,  // Data: The fetched data from the server
+    setFetchedData: setUserPlaces  // Function: Updates the fetched data manually
+    // fetchUserPlaces is a function that fetches data.
+    // [] is the initial value for the fetched data.
+  } = useFetch(fetchUserPlaces, [])
 
   function handleStartRemovePlace(place) {
     setModalIsOpen(true); // Sets the modal to open.
@@ -46,7 +36,7 @@ function App() {
   }
 
   // Uses the async keyword because it performs asynchronous operations (updating the server).
-  //The function takes a selectedPlace object as an argument, representing the place the user has just picked.
+  // The function takes a selectedPlace object as an argument, representing the place the user has just picked.
   async function handleSelectPlace(selectedPlace) {
     setUserPlaces((prevPickedPlaces) => {
       if (!prevPickedPlaces) {
@@ -96,7 +86,7 @@ function App() {
     // Sets the modal state to closed after the deletion process is completed.
     setModalIsOpen(false);
     // The function is recreated only when userPlaces changes, which is a logical dependency since the function works with the list of places.
-  }, [userPlaces]);
+  }, [userPlaces, setUserPlaces]);
   function handleError() {
     setErrorUpdatingPlaces(null) //  reset the error state when the user has acknowledged the error.
   }
@@ -106,7 +96,8 @@ function App() {
         {errorUpdatingPlaces && (<ErrorPage
           title="An error occurred!"
           message={errorUpdatingPlaces.message}
-          onConfirm={handleError} />
+          onConfirm={handleError}
+        />
         )}
       </Modal>
 
@@ -136,7 +127,9 @@ function App() {
           onSelectPlace={handleStartRemovePlace}
         />}
 
-        <AvailablePlaces onSelectPlace={handleSelectPlace} />
+        <AvailablePlaces
+          onSelectPlace={handleSelectPlace}
+        />
       </main>
     </>
   );
